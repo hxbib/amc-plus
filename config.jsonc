@@ -1,0 +1,841 @@
+{
+  // ╔═══════════════════════════════════════════════════════════════════════════╗
+  // ║                      AMC+ v5.23.25 — Configuration                        ║
+  // ║                                                                           ║
+  // ║  ONLY ONE GLOBAL: discord.webhook_url                                     ║
+  // ║  Everything else (timezone, state_path, avatar, username) is hardcoded    ║
+  // ║  in amc_monitor.py constants.                                             ║
+  // ║                                                                           ║
+  // ║  EVERYTHING else below is a DEFAULT that profiles inherit.                ║
+  // ║  Any profile can override any default.                                    ║
+  // ╚═══════════════════════════════════════════════════════════════════════════╝
+
+
+  // ─────────────────────────────────────────────────────────────────
+  //  GLOBAL — only webhook_url is needed in config
+  // ─────────────────────────────────────────────────────────────────
+
+  "discord": {
+    "webhook_url": "insertyourdiscordwebhookurlhere"   // Discord webhook URL — get from Server Settings → Integrations → Webhooks
+  },
+
+
+  // ─────────────────────────────────────────────────────────────────
+  //  DEFAULTS — inherited by every profile unless overridden
+  //  Set to empty/zero/null here so nothing sneaks in accidentally.
+  //  Each profile MUST specify its own values for anything it needs.
+  // ─────────────────────────────────────────────────────────────────
+
+  // ┌─── Movie & Theatre ───┐
+  "movie": "",                            // Movie name or slug. Auto-resolved against AMC catalogs.
+                                          //   Can be partial: "hail mary", "backrooms", "spider-man"
+                                          //   Can be exact slug: "project-hail-mary-76779"
+                                          //   If movie isn't on AMC yet, profile enters WAITING mode
+                                          //   and re-checks periodically until it appears.
+
+  "theatre": "",                          // Primary theatre slug. Auto-resolved if partial.
+                                          //   Example: "amc-lincoln-square-13"
+
+  "theatres": [],                         // Additional theatres to scan (array of slugs).
+                                          //   Example: ["amc-empire-25", "amc-kips-bay-15"]
+                                          //   If both "theatre" and "theatres" are set, theatre is prepended.
+
+  // ┌─── Format & Seating ───┐
+  "format": "",                           // Showtime format filter.
+                                          //   ""               — all formats (no filter)
+                                          //   "IMAX 70MM"      — IMAX with 70mm film (attribute: IMAX70MM)
+                                          //   "IMAX"           — IMAX digital (excludes 70MM and Dolby)
+                                          //   "Dolby"          — Dolby Cinema at AMC (DOLBYCINEMAATAMCPRIME)
+                                          //   "Laser"          — Laser at AMC (LASERATAMC)
+                                          //   "PRIME 3D"       — PRIME 3D (PRIME3D)
+                                          //   "RealD 3D"       — RealD 3D (REALD3D)
+                                          //   "Standard"       — Standard digital (no premium format)
+
+  "seating": "",                          // Seating type filter.
+                                          //   ""               — any seating type (no filter)
+                                          //   "recliners"      — AMC Signature Recliners only (RECLINERSEATING)
+                                          //                      When qty=2, loveseat recliner pairs (physically
+                                          //                      connected LoveSeatLeft+LoveSeatRight) are prioritized
+                                          //                      over regular adjacent seats.
+                                          //   "rockers"        — AMC Club Rockers only (AMCCLUBROCKERS)
+
+  "subtitles": "",                        // Subtitle filter.
+                                          //   ""               — EXCLUDE subtitled showtimes (regular only)
+                                          //   "open_caption"   — ONLY Open Caption (on-screen subtitles)
+                                          //   "english_subtitles" — ONLY "WITH ENGLISH SUBTITLES" showtimes
+                                          //                      Matches: "HINDI SPOKEN WITH ENGLISH SUBTITLES",
+                                          //                      "JAPANESE SPOKEN WITH ENGLISH SUBTITLES",
+                                          //                      "KOREAN SPOKEN WITH ENGLISH SUBTITLES", etc.
+                                          //   "any"            — No filter (accept everything incl. subtitled)
+
+  // ┌─── Mode ───┐
+  "mode": "",                             // Monitoring mode.
+                                          //   "snipe"   — Cancellation detection. Scans for newly available
+                                          //               seat groups in existing showtimes. When NEW showtimes
+                                          //               appear (via discovery engine), automatically triggers
+                                          //               aggressive acquisition (best seats, no tier gate).
+                                          //               This is the steady-state mode for already-on-sale movies.
+                                          //
+                                          //   "release" — Speculative fire. Targets the ABSOLUTE BEST seats
+                                          //               regardless of tier/min_score. Batch-orders across all
+                                          //               qualifying showtimes simultaneously. After firing,
+                                          //               automatically FALLS BACK to snipe mode to continue
+                                          //               monitoring. Use for ticket drop day.
+                                          //
+                                          //   If target_seats is set, both modes constrain to those seats only.
+
+  // ┌─── Quantity & Quality ───┐
+  "quantity": 2,                          // Number of adjacent seats to find. Must be >= 1.
+                                          //   2 = pair, 3 = trio, 4 = quad, 6 = group of 6, etc.
+
+  "tier": "ELITE",                             // Minimum seat quality tier. Filters by Nolan score.
+                                          //   "ELITE"  — 80+ score (best ~20% of seats, 2/3 back, center)
+                                          //   "GREAT"  — 70+ score (top ~35%)
+                                          //   "GOOD"   — 60+ score (top ~55%)
+                                          //   "OK"     — 55+ score (most non-front/edge seats)
+                                          //   "ALL"    — 0+ (any available seat, no quality filter)
+
+  "target_seats": [],                     // Specific seat names to target. Empty = best available.
+                                          //   Example: ["E6", "E7"]  — only these exact seats
+                                          //   Example: ["F5", "F6", "F7"]  — for qty=3
+                                          //   Names are uppercase row letter + seat number.
+                                          //   Applies to both snipe and release modes.
+
+  "min_score": 97,                         // Override tier with an exact minimum Nolan score (0-100).
+                                          //   0 = use the tier setting above instead.
+                                          //   90 = only seats scoring 90+.
+                                          //   Scores: 100 = theoretical perfect, 90+ = absolute premium,
+                                          //   80+ = elite, 70+ = great, 60+ = good, <55 = front/edge.
+
+  // ┌─── Dates & Discount ───┐
+  "target_dates": [],                     // Restrict to specific dates or date ranges. Empty = all dates.
+                                          //   Single date:  "2026-05-28"
+                                          //   Date range:   "2026-06-01:2026-06-07"  (inclusive start:end)
+                                          //   Mixed:        ["2026-05-28", "2026-06-01:2026-06-07"]
+
+  "discount": "",                         // Discount filtering.
+                                          //   ""        — same as "off"
+                                          //   "off"     — no discount filtering (all days)
+                                          //   "days"    — only scan Tue/Wed (AMC Discount Tuesdays/Wednesdays)
+                                          //   "require" — Tue/Wed AND showtime must be discount-eligible:
+                                          //               isDiscountDaysEligible=true AND NOT "Excluded from
+                                          //               50% off Discount" attribute. This correctly catches
+                                          //               opening-week exclusions where AMC blocks the discount
+                                          //               even on Tue/Wed.
+
+  "ticket_presale_start": "",             // YYYY-MM-DD — optional. Before this day the profile stays DORMANT
+                                          //   (metadata refresh only). On/after this day, use full watch/active
+                                          //   discovery for estimated ticket on-sale / "coming soon" windows.
+                                          //   Rough calendar: set to the early edge of your expected on-sale window.
+
+  // ┌─── Scanning ───┐
+  "scan_days": 90,                         // How many days ahead to scan FROM TODAY'S DATE.
+                                          //   90 = scan from today through 90 days in the future.
+                                          //   45 = scan 45 days ahead. 14 = 2 weeks ahead.
+                                          //   Combined with target_dates: if both are set, scan_days
+                                          //   determines the outer window and target_dates filters within it.
+
+  "poll": 60,                              // Seconds between scan cycles. Lower = more responsive.
+                                          //   5 = check every 5 seconds (aggressive, good for release day)
+                                          //   17 = check every 17 seconds (balanced)
+                                          //   30 = every 30 seconds (conservative, less API load)
+                                          //   Each profile can have its own poll rate.
+
+  "post_showtime_minutes": 20,             // Keep scanning this many minutes after showtime start.
+                                          //   20 = keep checking until 20 min after start (trailers ~25-30min)
+                                          //   0 = stop immediately at showtime
+                                          //   Useful because people cancel/no-show even after trailers begin.
+
+  "discovery_interval": 60,               // Seconds between background showtime re-discovery cycles.
+                                          //   The discovery engine runs in a background thread and periodically
+                                          //   re-fetches all showtimes to detect newly added ones.
+                                          //   45 = re-discover every 45 seconds
+                                          //   When NEW showtimes appear, triggers aggressive acquisition.
+
+  "early_drop_check": true,               // Scan release-day dates even while in dormant phase.
+                                          //   true  = every discovery_interval seconds, probe a narrow window
+                                          //           of dates around release_date (release-1 through release+3)
+                                          //           even when presale_start is many months away. Catches IMAX
+                                          //           70MM early drops (e.g. Dune Part Three, The Odyssey) that
+                                          //           AMC silently adds months before the normal presale window.
+                                          //           Metadata still refreshes every 4h as usual.
+                                          //   false = original behavior: metadata-only refresh every 4h,
+                                          //           no showtime queries during dormant phase.
+                                          //   Can be overridden per-profile: "early_drop_check": false
+
+  "timeout": 30,                          // HTTP request timeout in seconds (must be > 0; 0 breaks REST/urllib3).
+                                          //   12 = default. 24 = lenient (for slow connections).
+                                          //   Applies to both REST and GraphQL requests.
+
+  "workers": 7,                           // Max concurrent threads for parallel API calls.
+                                          //   5 = conservative (good for many profiles to avoid rate limits)
+                                          //   16 = moderate. 32 = aggressive (fast but more API load).
+                                          //   Each profile gets its own thread pool.
+
+  // ┌─── Reservation ───┐
+  "auto_reserve": true,                  // Automatically place a held order via GraphQL when seats are found.
+                                          //   true  = auto-reserve (order held ~8 min, must complete in browser)
+                                          //   false = alert only (sends Discord notification with ATC link)
+
+  "max_orders": 50,                        // Maximum simultaneous held orders PER PROFILE.
+                                          //   5 = up to 5 held orders for this movie at once.
+                                          //   Once max is reached, new seats are reported but not reserved.
+
+  "suppress_first": false,                // Behavior on first scan after startup.
+                                          //   true  = record baseline (don't alert for existing groups),
+                                          //           but still auto-reserve ELITE seats found at startup.
+                                          //   false = alert and reserve immediately on first scan.
+                                          //           Better for release mode and aggressive monitoring.
+
+  "alert_cooldown_minutes": 20,           // Minutes before the same seat group can re-trigger an alert.
+                                          //   Prevents spam from seats flickering in/out of availability,
+                                          //   while still re-alerting if the same seats reopen later.
+                                          //   45 = suppress flicker, re-alert after ~45 min.
+
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  PROFILES — each movie is monitored completely independently, in its own profile.
+  //
+  //  Every field above (except the 3 globals) can be overridden per profile.
+  //  If a field is omitted from a profile, it inherits the default above.
+  //
+  //  If "profiles" array is not present or empty, falls back to single-movie
+  //  mode using the top-level "movie" field.
+  //
+  //  Movies not yet on AMC enter WAITING mode and are re-checked periodically
+  //  until they appear. You'll get a Discord notification when they're found.
+  //
+  //  Release mode automatically falls back to snipe mode after firing.
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  "profiles": [
+
+    // ── 1. Project Hail Mary (03/20/26) ────────────────────────────
+    //{
+    //  "movie": "project-hail-mary",       // Released 03/20/26
+    //  "theatre": "amc-lincoln-square-13",
+    //  "format": "IMAX 70MM",
+    //  "seating": "",
+    //  "subtitles": "",
+    //  "mode": "snipe",
+    //  "quantity": 2,
+    //  "tier": "ELITE",
+    //  "target_seats": [],
+    //  "min_score": 90,
+    //  "discount": "require",
+    //  "ticket_presale_start": "2026-02-06",
+    //  "scan_days": 100,
+    //  "poll": 45,
+    //  "post_showtime_minutes": 20,
+    //  "discovery_interval": 120,
+    //  "timeout": 30,
+    //  "workers": 7,
+    //  "auto_reserve": true,
+    //  "max_orders": 5,
+    //  "suppress_first": false
+    //},
+
+    // ── 2. Mortal Kombat II (~03/31/26) ────────────────────────────
+    //{
+    //  "movie": "mortal-kombat-ii",          // ~Mar 31, 2026 (rough)
+    //  "theatre": "amc-lincoln-square-13",
+    //  "format": "IMAX 70MM",
+    //  "seating": "",
+    //  "subtitles": "",
+    //  "mode": "release",
+    //  "quantity": 2,
+    //  "tier": "ELITE",
+    //  "target_seats": [],
+    //  "min_score": 97,
+    //  "discount": "require",
+    //  "ticket_presale_start": "2026-03-27",
+    //  "scan_days": 90,
+    //  "poll": 45,
+    //  "post_showtime_minutes": 20,
+    //  "discovery_interval": 120,
+    //  "timeout": 30,
+    //  "workers": 7,
+    //  "auto_reserve": true,
+    //  "max_orders": 50,
+    //  "suppress_first": false
+    //},
+
+    // ── 3. The Sheep Detectives (~04/14/26) ────────────────────────
+    //{
+    //  "movie": "the-sheep-detectives",     // ~Apr 14, 2026 (rough)
+    //  "theatres": ["amc-fresh-meadows-7", "amc-bay-terrace-6", "amc-bay-plaza-cinema-13", "amc-empire-25", "amc-kips-bay-15", "amc-34th-street-14"],
+    //  "format": "",
+    //  "seating": "recliners",
+    //  "subtitles": "",
+    //  "mode": "release",
+    //  "quantity": 2,
+    //  "tier": "ELITE",
+    //  "target_seats": [],
+    //  "min_score": 97,
+    //  "discount": "require",
+    //  "ticket_presale_start": "2026-04-10",
+    //  "scan_days": 90,
+    //  "poll": 45,
+    //  "post_showtime_minutes": 20,
+    //  "discovery_interval": 120,
+    //  "timeout": 30,
+    //  "workers": 7,
+    //  "auto_reserve": true,
+    //  "max_orders": 50,
+    //  "suppress_first": false
+    //},
+
+    // ── 4. Attack on Titan: The Last Attack (05/18/26) ────────────
+    //{
+    //  "movie": "attack-on-titan-the-last-attack", // Re-release 05/18/26
+    //  "theatres": ["amc-lincoln-square-13", "amc-fresh-meadows-7", "amc-bay-terrace-6", "amc-bay-plaza-cinema-13", "amc-empire-25", "amc-kips-bay-15", "amc-34th-street-14"],
+    //  "format": "",
+    //  "seating": "recliners",
+    //  "subtitles": "english_subtitles",
+    //  "mode": "snipe",
+    //  "quantity": 2,
+    //  "tier": "ELITE",
+    //  "target_seats": [],
+    //  "min_score": 97,
+    //  "discount": "",
+    //  "ticket_presale_start": "2026-03-23",
+    //  "scan_days": 90,
+    //  "poll": 45,
+    //  "post_showtime_minutes": 20,
+    //  "discovery_interval": 120,
+    //  "timeout": 30,
+    //  "workers": 7,
+    //  "auto_reserve": true,
+    //  "max_orders": 50,
+    //  "suppress_first": false
+    //},
+
+    // ── 5. Backrooms (05/29/26) ───────────────────────────────────
+    //{
+    //  "movie": "backrooms",                // Released 05/29/26
+    //  "theatres": ["amc-fresh-meadows-7", "amc-bay-terrace-6", "amc-bay-plaza-cinema-13", "amc-empire-25", "amc-kips-bay-15", "amc-34th-street-14"],
+    //  "format": "",
+    //  "seating": "recliners",
+    //  "subtitles": "",
+    //  "mode": "release",
+    //  "quantity": 2,
+    //  "tier": "ELITE",
+    //  "target_seats": [],
+    //  "min_score": 97,
+    //  "discount": "require",
+    //  "ticket_presale_start": "2026-04-01",
+    //  "scan_days": 90,
+    //  "poll": 45,
+    //  "post_showtime_minutes": 20,
+    //  "discovery_interval": 120,
+    //  "timeout": 30,
+    //  "workers": 7,
+    //  "auto_reserve": true,
+    //  "max_orders": 50,
+    //  "suppress_first": false
+    //},
+
+    // ── 6. Scary Movie 6 (06/12/26) ──────────────────────────────
+    //{
+    //  "movie": "scary-movie",            // Released 06/12/26
+    //  "theatres": ["amc-fresh-meadows-7", "amc-bay-terrace-6", "amc-bay-plaza-cinema-13", "amc-empire-25", "amc-kips-bay-15", "amc-34th-street-14"],
+    //  "format": "",
+    //  "seating": "recliners",
+    //  "subtitles": "",
+    //  "mode": "release",
+    //  "quantity": 2,
+    //  "tier": "ELITE",
+    //  "target_seats": [],
+    //  "min_score": 97,
+    //  "discount": "require",
+    //  "ticket_presale_start": "2026-05-15",
+    //  "scan_days": 90,
+    //  "poll": 45,
+    //  "post_showtime_minutes": 20,
+    //  "discovery_interval": 120,
+    //  "timeout": 30,
+    //  "workers": 7,
+    //  "auto_reserve": true,
+    //  "max_orders": 50,
+    //  "suppress_first": false
+    //},
+
+    // ── 7. Disclosure Day (06/12/26) ──────────────────────────────
+    {
+      "movie": "disclosure-day",           // Released 06/12/26
+      "theatre": "amc-lincoln-square-13",
+      "format": "IMAX 70MM",
+      "seating": "",
+      "subtitles": "",
+      "mode": "release",
+      "quantity": 2,
+      "tier": "ELITE",
+      "target_seats": [],
+      "min_score": 97,
+      "discount": "require",
+      "ticket_presale_start": "2026-05-22",
+      "scan_days": 90,
+      "poll": 45,
+      "post_showtime_minutes": 20,
+      "discovery_interval": 120,
+      "timeout": 30,
+      "workers": 7,
+      "auto_reserve": true,
+      "max_orders": 50,
+      "suppress_first": false
+    },
+
+    // ── 8. Supergirl (06/26/26) ───────────────────────────────────
+    {
+      "movie": "supergirl",                // Released 06/26/26
+      "theatre": "amc-lincoln-square-13",
+      "format": "IMAX 70MM",
+      "seating": "",
+      "subtitles": "",
+      "mode": "release",
+      "quantity": 2,
+      "tier": "ELITE",
+      "target_seats": [],
+      "min_score": 97,
+      "discount": "require",
+      "ticket_presale_start": "2026-05-08",
+      "scan_days": 90,
+      "poll": 45,
+      "post_showtime_minutes": 20,
+      "discovery_interval": 120,
+      "timeout": 30,
+      "workers": 7,
+      "auto_reserve": true,
+      "max_orders": 50,
+      "suppress_first": false
+    },
+
+    // ── 9. The Odyssey (07/17/26) ─────────────────────────────────
+    {
+      "movie": "the-odyssey",              // Released 07/17/26
+      "theatre": "amc-lincoln-square-13",
+      "format": "IMAX 70MM",
+      "seating": "",
+      "subtitles": "",
+      "mode": "release",
+      "quantity": 2,
+      "tier": "ELITE",
+      "target_seats": [],
+      "min_score": 97,
+      "discount": "",
+      "ticket_presale_start": "2026-05-29",
+      "scan_days": 90,
+      "poll": 45,
+      "post_showtime_minutes": 20,
+      "discovery_interval": 120,
+      "timeout": 30,
+      "workers": 7,
+      "auto_reserve": true,
+      "max_orders": 50,
+      "suppress_first": false
+    },
+
+    // ── 10. Spider-Man: Brand New Day (07/31/26) ──────────────────
+    {
+      "movie": "spider-man-brand-new-day",  // Released 07/31/26
+      "theatres": ["amc-fresh-meadows-7", "amc-bay-terrace-6", "amc-bay-plaza-cinema-13", "amc-empire-25", "amc-kips-bay-15", "amc-34th-street-14"],
+      "format": "",
+      "seating": "recliners",
+      "subtitles": "",
+      "mode": "release",
+      "quantity": 2,
+      "tier": "ELITE",
+      "target_seats": [],
+      "min_score": 97,
+      "discount": "",
+      "ticket_presale_start": "2026-05-22",
+      "scan_days": 90,
+      "poll": 45,
+      "post_showtime_minutes": 20,
+      "discovery_interval": 120,
+      "timeout": 30,
+      "workers": 7,
+      "auto_reserve": true,
+      "max_orders": 50,
+      "suppress_first": false
+    },
+
+    // ── 11. Fall 2 (08/07/26) ─────────────────────────────────────
+    {
+      "movie": "fall-2",                   // Released 08/07/26
+      "theatres": ["amc-fresh-meadows-7", "amc-bay-terrace-6", "amc-bay-plaza-cinema-13", "amc-empire-25", "amc-kips-bay-15", "amc-34th-street-14"],
+      "format": "",
+      "seating": "recliners",
+      "subtitles": "",
+      "mode": "release",
+      "quantity": 2,
+      "tier": "ELITE",
+      "target_seats": [],
+      "min_score": 97,
+      "discount": "require",
+      "ticket_presale_start": "2026-07-17",
+      "scan_days": 90,
+      "poll": 45,
+      "post_showtime_minutes": 20,
+      "discovery_interval": 120,
+      "timeout": 30,
+      "workers": 7,
+      "auto_reserve": true,
+      "max_orders": 50,
+      "suppress_first": false
+    },
+
+    // ── 12. The End of Oak Street (08/14/26) ──────────────────────
+    {
+      "movie": "the-end-of-oak-street",    // Released 08/14/26
+      "theatre": "amc-lincoln-square-13",
+      "format": "IMAX 70MM",
+      "seating": "",
+      "subtitles": "",
+      "mode": "release",
+      "quantity": 2,
+      "tier": "ELITE",
+      "target_seats": [],
+      "min_score": 97,
+      "discount": "require",
+      "ticket_presale_start": "2026-07-03",
+      "scan_days": 90,
+      "poll": 45,
+      "post_showtime_minutes": 20,
+      "discovery_interval": 120,
+      "timeout": 30,
+      "workers": 7,
+      "auto_reserve": true,
+      "max_orders": 50,
+      "suppress_first": false
+    },
+
+    // ── 13. Insidious: Out of the Further (2026)
+    {
+      "movie": "insidious-out-of-the-further",
+      "theatres": ["amc-fresh-meadows-7", "amc-bay-terrace-6", "amc-bay-plaza-cinema-13", "amc-empire-25", "amc-kips-bay-15", "amc-34th-street-14"],
+      "format": "",
+      "seating": "recliners",
+      "subtitles": "",
+      "mode": "release",
+      "quantity": 2,
+      "tier": "ELITE",
+      "target_seats": [],
+      "min_score": 97,
+      "discount": "require",
+      "ticket_presale_start": "2026-07-24",
+      "scan_days": 90,
+      "poll": 45,
+      "post_showtime_minutes": 20,
+      "discovery_interval": 120,
+      "timeout": 30,
+      "workers": 7,
+      "auto_reserve": true,
+      "max_orders": 50,
+      "suppress_first": false
+    },
+
+    // ── 14. How to Rob a Bank (09/04/26) ──────────────────────────
+    {
+      "movie": "how-to-rob-a-bank",        // Released 09/04/26
+      "theatres": ["amc-fresh-meadows-7", "amc-bay-terrace-6", "amc-bay-plaza-cinema-13", "amc-empire-25", "amc-kips-bay-15", "amc-34th-street-14"],
+      "format": "",
+      "seating": "recliners",
+      "subtitles": "",
+      "mode": "release",
+      "quantity": 2,
+      "tier": "ELITE",
+      "target_seats": [],
+      "min_score": 97,
+      "discount": "require",
+      "ticket_presale_start": "2026-08-07",
+      "scan_days": 90,
+      "poll": 45,
+      "post_showtime_minutes": 20,
+      "discovery_interval": 120,
+      "timeout": 30,
+      "workers": 7,
+      "auto_reserve": true,
+      "max_orders": 50,
+      "suppress_first": false
+    },
+
+    // ── 15. Avengers: Endgame Re-Release (09/25/26) ──────────────
+    {
+      "movie": "avengers-endgame-2019-re-82342",
+      "theatres": ["amc-lincoln-square-13", "amc-fresh-meadows-7", "amc-bay-terrace-6", "amc-bay-plaza-cinema-13", "amc-empire-25", "amc-kips-bay-15", "amc-34th-street-14"],
+      "format": "",
+      "seating": "",
+      "subtitles": "",
+      "mode": "release",
+      "quantity": 2,
+      "tier": "ELITE",
+      "target_seats": [],
+      "min_score": 97,
+      "discount": "",
+      "ticket_presale_start": "2026-07-31",
+      "scan_days": 90,
+      "poll": 45,
+      "post_showtime_minutes": 20,
+      "discovery_interval": 120,
+      "timeout": 30,
+      "workers": 7,
+      "auto_reserve": true,
+      "max_orders": 50,
+      "suppress_first": false
+    },
+
+    // ── 16. Street Fighter (10/16/26) ─────────────────────────────
+    {
+      "movie": "street-fighter",            // Released 10/16/26
+      "theatre": "amc-lincoln-square-13",
+      "format": "IMAX 70MM",
+      "seating": "",
+      "subtitles": "",
+      "mode": "release",
+      "quantity": 2,
+      "tier": "ELITE",
+      "target_seats": [],
+      "min_score": 97,
+      "discount": "require",
+      "ticket_presale_start": "2026-08-28",
+      "scan_days": 90,
+      "poll": 45,
+      "post_showtime_minutes": 20,
+      "discovery_interval": 120,
+      "timeout": 30,
+      "workers": 7,
+      "auto_reserve": true,
+      "max_orders": 50,
+      "suppress_first": false
+    },
+
+    // ── 17. V for Vendetta Re-Release (11/01/26 & 11/05/26) ──────
+    {
+      "movie": "v-for-vendetta",            // Re-release 11/01/26 & 11/05/26
+      "theatres": ["amc-lincoln-square-13", "amc-fresh-meadows-7", "amc-bay-terrace-6", "amc-bay-plaza-cinema-13", "amc-empire-25", "amc-kips-bay-15", "amc-34th-street-14"],
+      "format": "",
+      "seating": "recliners",
+      "subtitles": "",
+      "mode": "release",
+      "quantity": 2,
+      "tier": "ELITE",
+      "target_seats": [],
+      "min_score": 97,
+      "discount": "",
+      "ticket_presale_start": "2026-09-06",
+      "target_dates": ["2026-11-01:2026-11-07"],
+      "scan_days": 90,
+      "poll": 45,
+      "post_showtime_minutes": 20,
+      "discovery_interval": 120,
+      "timeout": 30,
+      "workers": 7,
+      "auto_reserve": true,
+      "max_orders": 50,
+      "suppress_first": false
+    },
+
+    // ── 18. Narnia (11/26/26) ─────────────────────────────────────
+    {
+      "movie": "narnia",                    // Released 11/26/26
+      "theatre": "amc-lincoln-square-13",
+      "format": "IMAX 70MM",
+      "seating": "",
+      "subtitles": "",
+      "mode": "release",
+      "quantity": 2,
+      "tier": "ELITE",
+      "target_seats": [],
+      "min_score": 97,
+      "discount": "require",
+      "ticket_presale_start": "2026-09-24",
+      "scan_days": 90,
+      "poll": 45,
+      "post_showtime_minutes": 20,
+      "discovery_interval": 120,
+      "timeout": 30,
+      "workers": 7,
+      "auto_reserve": true,
+      "max_orders": 50,
+      "suppress_first": false
+    },
+
+    // ── 19. Avengers: Doomsday (12/18/26) ─────────────────────────
+    {
+      "movie": "avengers-doomsday",         // Released 12/18/26
+      "theatres": ["amc-lincoln-square-13", "amc-fresh-meadows-7", "amc-bay-terrace-6", "amc-bay-plaza-cinema-13", "amc-empire-25", "amc-kips-bay-15", "amc-34th-street-14"],
+      "format": "",
+      "seating": "",
+      "subtitles": "",
+      "mode": "release",
+      "quantity": 2,
+      "tier": "ELITE",
+      "target_seats": [],
+      "min_score": 97,
+      "discount": "",
+      "ticket_presale_start": "2026-10-09",
+      "scan_days": 90,
+      "poll": 45,
+      "post_showtime_minutes": 20,
+      "discovery_interval": 120,
+      "timeout": 30,
+      "workers": 7,
+      "auto_reserve": true,
+      "max_orders": 50,
+      "suppress_first": false
+    },
+
+    // ── 20. Dune: Part Three (12/18/2026)— update slug when AMC lists ────
+    {
+      "movie": "dune-part-three",             // Released 12/18/26 Placeholder slug until AMC publishes listing
+      "theatre": "amc-lincoln-square-13",
+      "format": "IMAX 70MM",
+      "seating": "",
+      "subtitles": "",
+      "mode": "release",
+      "quantity": 2,
+      "tier": "ELITE",
+      "target_seats": [],
+      "min_score": 97,
+      "discount": "",
+      "ticket_presale_start": "2026-10-30",
+      "scan_days": 90,
+      "poll": 45,
+      "post_showtime_minutes": 20,
+      "discovery_interval": 120,
+      "timeout": 30,
+      "workers": 7,
+      "auto_reserve": true,
+      "max_orders": 50,
+      "suppress_first": false
+    }
+  ]
+
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  NYC & SURROUNDING AREA AMC THEATRES
+  //  Copy any slug into "theatre" or the "theatres" array.
+  //  Slugs are auto-resolved — partial names work too.
+  // ═══════════════════════════════════════════════════════════════════════════
+  //
+  // ─── MANHATTAN ──────────────────────────────────────────────────────────
+  //
+  //   "amc-lincoln-square-13"            AMC Lincoln Square 13
+  //                                      1998 Broadway (at 68th St), UWS
+  //                                      IMAX 70MM · Dolby · Laser · Recliners
+  //
+  //   "amc-empire-25"                    AMC Empire 25
+  //                                      234 W 42nd St, Times Square
+  //                                      IMAX · Dolby · 25 screens
+  //
+  //   "amc-34th-street-14"               AMC 34th Street 14
+  //                                      312 W 34th St (at 8th Ave), Midtown
+  //                                      IMAX · Recliners
+  //
+  //   "amc-kips-bay-15"                  AMC Kips Bay 15
+  //                                      570 Second Ave (at 31st St), Kips Bay
+  //                                      Recliners · 15 screens
+  //
+  //   "amc-19th-st-east-6"               AMC 19th St. East 6
+  //                                      890 Broadway (at 19th St), Flatiron
+  //                                      Recliners · Boutique
+  //
+  //   "amc-village-7"                    AMC Village 7
+  //                                      66 Third Ave (at 11th St), East Village
+  //                                      Recliners
+  //
+  //   "amc-84th-street-6"               AMC 84th Street 6
+  //                                      2310 Broadway (at 84th St), UWS
+  //                                      Recliners · Boutique
+  //
+  //   "amc-orpheum-7"                    AMC Orpheum 7
+  //                                      1538 Third Ave (at 86th St), UES
+  //                                      Recliners
+  //
+  //   "amc-magic-johnson-harlem-9"       AMC Magic Johnson Harlem 9
+  //                                      2309 Frederick Douglass Blvd, Harlem
+  //                                      Recliners
+  //
+  // ─── QUEENS ─────────────────────────────────────────────────────────────
+  //
+  //   "amc-fresh-meadows-7"              AMC Fresh Meadows 7
+  //                                      190-02 Horace Harding Blvd, Fresh Meadows
+  //                                      Recliners
+  //
+  //   "amc-bay-terrace-6"                AMC Bay Terrace 6
+  //                                      211-01 26th Ave, Bayside
+  //                                      Recliners · Laser · MacGuffins Bar
+  //
+  // ─── BRONX ──────────────────────────────────────────────────────────────
+  //
+  //   "amc-bay-plaza-cinema-13"          AMC Bay Plaza Cinema 13
+  //                                      2210 Bartow Ave, Co-op City
+  //                                      IMAX · Recliners · 13 screens
+  //
+  // ─── STATEN ISLAND ──────────────────────────────────────────────────────
+  //
+  //   "amc-dine-in-staten-island-11"     AMC DINE-IN Staten Island 11
+  //                                      2655 Richmond Ave, New Springville
+  //                                      DINE-IN · Recliners · 11 screens
+  //
+  // ─── WESTCHESTER ────────────────────────────────────────────────────────
+  //
+  //   "amc-port-chester-14"              AMC Port Chester 14
+  //                                      40 Westchester Ave, Port Chester
+  //                                      IMAX · Recliners · 14 screens
+  //
+  // ─── LONG ISLAND (NASSAU) ───────────────────────────────────────────────
+  //
+  //   "amc-roosevelt-field-8"            AMC Roosevelt Field 8
+  //                                      630 Old Country Rd, Garden City
+  //                                      Recliners · 8 screens
+  //
+  //   "glen-cove-6"                      AMC Glen Cove 6
+  //                                      5 School St, Glen Cove
+  //                                      6 screens
+  //
+  //   "amc-levittown-10"                 AMC Levittown 10
+  //                                      3585 Hempstead Tpke, Levittown
+  //                                      Recliners · 10 screens
+  //
+  //   "amc-raceway-10"                   AMC Raceway 10
+  //                                      1025 Corporate Dr, Westbury
+  //                                      Recliners · 10 screens
+  //
+  //   "amc-fantasy-5"                    AMC Fantasy 5
+  //                                      18 N Park Ave, Rockville Centre
+  //                                      Boutique · 5 screens
+  //
+  //   "amc-shore-8"                      AMC Shore 8
+  //                                      37 Wall St, Huntington
+  //                                      8 screens
+  //
+  // ─── LONG ISLAND (SUFFOLK) ──────────────────────────────────────────────
+  //
+  //   "amc-stony-brook-17"               AMC Stony Brook 17
+  //                                      2196 Nesconset Hwy, Stony Brook
+  //                                      IMAX · Recliners · 17 screens
+  //
+  // ─── NEW JERSEY ─────────────────────────────────────────────────────────
+  //
+  //   "amc-newport-centre-11"            AMC Newport Centre 11
+  //                                      30 Mall Dr West, Jersey City
+  //                                      IMAX · Recliners · 11 screens
+  //
+  //   "amc-jersey-gardens-20"            AMC Jersey Gardens 20
+  //                                      651 Kapkowski Rd, Elizabeth
+  //                                      IMAX · Dolby · Recliners · 20 screens
+  //
+  //   "amc-ridgefield-park-12"           AMC Ridgefield Park 12
+  //                                      75 Challenger Rd, Ridgefield Park
+  //                                      Recliners · 12 screens
+  //
+  //   "amc-garden-state-16"              AMC Garden State 16
+  //                                      4000 Garden State Plaza, Paramus
+  //                                      IMAX · Dolby · Recliners · 16 screens
+  //
+  //   "amc-clifton-commons-16"           AMC Clifton Commons 16
+  //                                      405 Route 3 East, Clifton
+  //                                      IMAX · Recliners · 16 screens
+}
